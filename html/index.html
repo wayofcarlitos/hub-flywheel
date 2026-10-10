@@ -1,0 +1,1290 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Forge Flywheel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tektur:wght@500;700;900&family=JetBrains+Mono:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme: dark;
+  --bg:#05060a; --panel:rgba(14,16,24,.72); --line:rgba(255,190,90,.16);
+  --gold:#ffb23a; --gold2:#ffd27a; --ember:#ff6a1f; --cyan:#3fe0ff; --cyan2:#9ff3ff;
+  --ok:#3dffa8; --bad:#ff4d6d; --mute:#7c8496; --text:#e9ecf3;
+  --display:"Tektur","Eurostile","Bank Gothic",system-ui,sans-serif;
+  --mono:"JetBrains Mono","SF Mono",ui-monospace,Menlo,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--mono);font-size:13px;min-height:100%}
+body{overflow-x:hidden;padding:0 16px 24px}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(1200px 700px at 50% 38%,rgba(255,150,40,.10),transparent 60%),
+    radial-gradient(900px 600px at 85% 90%,rgba(63,224,255,.07),transparent 60%),
+    repeating-linear-gradient(0deg,rgba(255,255,255,.018) 0 1px,transparent 1px 4px);}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.35;
+  background-image:linear-gradient(rgba(63,224,255,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(63,224,255,.06) 1px,transparent 1px);
+  background-size:48px 48px;mask-image:radial-gradient(ellipse at 50% 40%,#000 20%,transparent 75%)}
+.wrap{position:relative;z-index:1;max-width:1720px;margin:0 auto}
+
+/* top bar */
+header{display:flex;flex-wrap:wrap;align-items:center;gap:14px 22px;padding:18px 4px 14px;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:baseline;gap:12px;margin-right:auto}
+.brand h1{font-family:var(--display);font-weight:900;font-size:clamp(22px,2.4vw,34px);letter-spacing:.14em;margin:0;
+  background:linear-gradient(180deg,var(--gold2),var(--gold) 45%,var(--ember));-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 14px rgba(255,160,40,.35))}
+.brand span{font-family:var(--display);color:var(--cyan);letter-spacing:.35em;font-size:12px}
+.pill{display:flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid var(--line);border-radius:3px;background:var(--panel);
+  font-size:11px;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
+.pill b{color:var(--gold2);font-weight:800}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 10px var(--ok);flex:none}
+.dot.bad{background:var(--bad);box-shadow:0 0 10px var(--bad)}
+.dot.warn{background:var(--gold);box-shadow:0 0 10px var(--gold)}
+.dot.idle{background:var(--mute);box-shadow:none}
+.pulse{animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.35;transform:scale(.8)}}
+.clock{font-family:var(--display);font-size:15px;color:var(--cyan2);letter-spacing:.12em}
+
+/* main grid */
+main{display:grid;grid-template-columns:minmax(300px,1fr) minmax(420px,1.45fr) minmax(300px,1fr);gap:18px;margin-top:18px}
+@media (max-width:1180px){main{grid-template-columns:1fr}}
+.panel{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:16px 16px 14px;
+  backdrop-filter:blur(6px);box-shadow:inset 0 1px 0 rgba(255,210,120,.06),0 20px 60px -30px rgba(0,0,0,.8);
+  animation:rise .9s cubic-bezier(.16,1,.3,1) both}
+.panel::before,.panel::after{content:"";position:absolute;width:14px;height:14px;border-color:var(--gold);border-style:solid;opacity:.7}
+.panel::before{top:-1px;left:-1px;border-width:2px 0 0 2px}
+.panel::after{bottom:-1px;right:-1px;border-width:0 2px 2px 0}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}}
+.panel h2{font-family:var(--display);font-weight:700;font-size:12px;letter-spacing:.32em;color:var(--gold);margin:0 0 12px;display:flex;align-items:center;gap:10px}
+.panel h2::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent)}
+.sub{color:var(--mute);font-size:11px}
+
+/* flywheel */
+.wheel-panel{display:flex;flex-direction:column;align-items:center;animation-delay:.12s}
+.wheel{position:relative;width:min(100%,640px);aspect-ratio:1}
+.wheel img.core{position:absolute;inset:17%;width:66%;height:66%;object-fit:cover;border-radius:50%;
+  mask-image:radial-gradient(circle,#000 58%,transparent 71%);animation:spin 140s linear infinite;filter:saturate(1.15) contrast(1.05)}
+.wheel .glow{position:absolute;inset:26%;border-radius:50%;background:radial-gradient(circle,rgba(255,200,110,.28),transparent 65%);animation:breathe 4s ease-in-out infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes breathe{50%{transform:scale(1.12);opacity:.6}}
+.wheel svg,.wheel canvas{position:absolute;inset:0;width:100%;height:100%}
+.hub-readout{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none}
+.hub-readout .big{font-family:var(--display);font-weight:900;font-size:clamp(34px,4.6vw,64px);color:#fff;
+  text-shadow:0 0 24px rgba(255,190,90,.9),0 0 60px rgba(255,120,30,.6)}
+.hub-readout .lbl{font-size:10px;letter-spacing:.35em;color:var(--gold2);text-shadow:0 0 8px #000}
+.stage{position:absolute;transform:translate(-50%,-50%);width:132px;text-align:center;padding:7px 6px 6px;border:1px solid rgba(63,224,255,.35);
+  background:rgba(4,8,14,.82);border-radius:3px;box-shadow:0 0 18px -6px var(--cyan);transition:box-shadow .4s,border-color .4s}
+.stage.hot{border-color:var(--gold);box-shadow:0 0 26px -4px var(--gold)}
+.stage .t{font-family:var(--display);font-size:10px;letter-spacing:.22em;color:var(--cyan)}
+.stage .v{font-family:var(--display);font-weight:700;font-size:18px;color:#fff;margin-top:2px}
+.stage .d{font-size:10px;color:var(--mute);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:620px){.stage{width:96px}.stage .v{font-size:14px}.stage .d{display:none}}
+.spark{width:100%;max-width:640px;height:70px;margin-top:6px}
+.spark-lbl{display:flex;justify-content:space-between;width:100%;max-width:640px;color:var(--mute);font-size:10px;letter-spacing:.15em}
+
+/* agent tree */
+.tree-panel{animation-delay:.05s}
+#tree{width:100%;height:auto;display:block;overflow:visible}
+#tree .edge{fill:none;stroke:rgba(255,178,58,.25);stroke-width:1.5}
+#tree .flow{fill:none;stroke:var(--gold);stroke-width:2;stroke-dasharray:4 14;animation:flow 1.4s linear infinite;filter:drop-shadow(0 0 4px var(--gold))}
+#tree .flow.cy{stroke:var(--cyan);filter:drop-shadow(0 0 4px var(--cyan))}
+#tree .flow.slow{animation-duration:4s;opacity:.55}
+@keyframes flow{to{stroke-dashoffset:-36}}
+.node rect{fill:rgba(6,9,15,.92);stroke:rgba(255,178,58,.55);stroke-width:1}
+.node.root rect{stroke:var(--gold);stroke-width:1.6}
+.node.off rect{stroke:var(--bad)}
+.node text{font-family:var(--mono);fill:var(--text)}
+.node .nm{font-family:var(--display);font-weight:700;letter-spacing:.18em;font-size:13px;fill:var(--gold2)}
+.node .rl{font-size:9.5px;fill:var(--mute)}
+.node .nx{font-size:9.5px;fill:var(--cyan2)}
+.jobs{margin-top:10px;display:grid;gap:6px}
+.job{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;font-size:11px;padding:6px 8px;border-left:2px solid var(--line);background:rgba(255,255,255,.02)}
+.job .who{font-family:var(--display);font-size:9.5px;letter-spacing:.18em;color:var(--gold)}
+.job .when{color:var(--cyan2);font-variant-numeric:tabular-nums}
+
+/* fleet */
+.fleet-panel{animation-delay:.18s}
+.farm{margin-bottom:14px}
+.farm-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.farm-h b{font-family:var(--display);letter-spacing:.2em;font-size:12px}
+.cells{display:grid;grid-template-columns:repeat(auto-fill,minmax(30px,1fr));gap:5px}
+.cell{aspect-ratio:1;position:relative;clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%);
+  background:linear-gradient(160deg,rgba(63,224,255,.55),rgba(63,224,255,.12));animation:hum 3s ease-in-out infinite}
+.cell.win{background:linear-gradient(160deg,var(--ok),rgba(61,255,168,.2))}
+.cell.loss{background:linear-gradient(160deg,var(--ember),rgba(255,106,31,.18))}
+.cell.dead{background:#2a2e38;animation:none}
+@keyframes hum{50%{filter:brightness(1.45)}}
+.chad-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}
+.cc{padding:8px 9px;border:1px solid rgba(255,178,58,.28);background:linear-gradient(135deg,rgba(255,178,58,.08),transparent);border-radius:3px;position:relative;overflow:hidden}
+.cc::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,220,150,.13) 50%,transparent 70%);transform:translateX(-120%);animation:sheen 6s ease-in-out infinite}
+@keyframes sheen{40%,100%{transform:translateX(120%)}}
+.cc .n{font-family:var(--display);font-size:10px;letter-spacing:.14em;color:var(--gold2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cc .b{font-family:var(--display);font-weight:700;font-size:16px;margin-top:3px}
+.cc .s{font-size:10px;color:var(--mute)}
+.pos{color:var(--ok)} .neg{color:var(--ember)}
+.mini{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:10px}
+.stat{padding:8px;border:1px solid var(--line);border-radius:3px;text-align:center}
+.stat .k{font-size:9.5px;letter-spacing:.18em;color:var(--mute)}
+.stat .v{font-family:var(--display);font-weight:700;font-size:17px;color:var(--gold2);margin-top:2px}
+
+/* bottom */
+.bottom{display:grid;grid-template-columns:1.25fr 1.4fr .9fr;gap:18px;margin-top:18px}
+@media (max-width:1180px){.bottom{grid-template-columns:1fr}}
+.lanes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.lane h3{font-family:var(--display);font-size:10px;letter-spacing:.25em;margin:0 0 6px;color:var(--mute)}
+.lane.open h3{color:var(--gold)} .lane.prog h3{color:var(--cyan)} .lane.done h3{color:var(--ok)}
+.task{font-size:11px;padding:7px 8px;margin-bottom:6px;background:rgba(255,255,255,.03);border-left:2px solid var(--gold);line-height:1.35}
+.lane.prog .task{border-color:var(--cyan)} .lane.done .task{border-color:var(--ok);opacity:.75}
+.task .r{font-size:9.5px;color:var(--mute);letter-spacing:.1em;margin-bottom:2px;text-transform:uppercase}
+.feed{height:260px;overflow:hidden;position:relative;mask-image:linear-gradient(#000 80%,transparent)}
+.ev{display:grid;grid-template-columns:64px 1fr auto;gap:8px;font-size:11px;padding:5px 0;border-bottom:1px dashed rgba(255,255,255,.06);animation:slide .5s cubic-bezier(.16,1,.3,1) both}
+@keyframes slide{from{opacity:0;transform:translateX(-12px)}}
+.ev .ts{color:var(--mute)} .ev .tag{font-size:9.5px;letter-spacing:.14em}
+.ev.acted .tag{color:var(--ok)} .ev.skip .tag{color:var(--mute)} .ev.trade .tag{color:var(--gold)}
+.fuel{margin-bottom:12px}
+.fuel .row{display:flex;justify-content:space-between;font-size:11px;margin-bottom:5px}
+.bar{height:10px;border:1px solid var(--line);border-radius:2px;overflow:hidden;background:rgba(255,255,255,.03)}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--ember),var(--gold),var(--gold2));box-shadow:0 0 12px var(--gold);transition:width 1s}
+.bar.low i{background:linear-gradient(90deg,#ff2d55,var(--ember));box-shadow:0 0 12px var(--bad)}
+.note{font-size:10.5px;color:var(--mute);line-height:1.5;margin-top:8px}
+.stale{display:none;position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:5;padding:10px 16px;border:1px solid var(--bad);background:#1a0710;color:#ffb3c1;font-size:12px;letter-spacing:.08em}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+        @keyframes fwpulse{0%,100%{opacity:1}50%{opacity:.25}}
+    </style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand"><h1>FORGE INC</h1><span>FLYWHEEL // LIVE</span></div>
+    <div class="pill"><span class="dot pulse" id="d-fresh"></span>DATA <b id="fresh">...</b></div>
+    <div class="pill"><span class="dot" id="d-wd"></span>WATCHDOG <b id="wd">...</b></div>
+    <div class="pill">MARKET <b id="mkt">...</b></div>
+    <div class="pill">SERVER <b id="srv">...</b></div>
+    <div class="clock" id="clock">--:--</div>
+  </header>
+
+  <main>
+    <section class="panel tree-panel">
+      <h2>AGENT TREE</h2>
+      <div style="display:flex;gap:12px;margin-bottom:12px;border-bottom:1px solid var(--line);padding-bottom:8px">
+        <div onclick="switchFarm('p3rp')" style="cursor:pointer;padding:6px 12px;border-bottom:2px solid var(--gold);color:var(--gold);font-weight:700;font-family:var(--display);font-size:11px;letter-spacing:.1em" id="p3-tab">P3RP FARM</div>
+        <div onclick="switchFarm('chad')" style="cursor:pointer;padding:6px 12px;border-bottom:2px solid transparent;color:var(--mute);font-weight:700;font-family:var(--display);font-size:11px;letter-spacing:.1em" id="ch-tab">CHAD FARM</div>
+      </div>
+      <svg id="tree" viewBox="0 0 420 330"></svg>
+      <div class="jobs" id="jobs"></div>
+    </section>
+
+    <div id="p3rp-flywheel" style="display:block"><section class="panel wheel-panel">
+      <h2 style="width:100%">THE FLYWHEEL</h2>
+      <div class="wheel" id="wheel">
+        <div class="glow"></div>
+        <img class="core" src="core.jpg" alt="">
+        <canvas id="particles"></canvas>
+        <svg viewBox="0 0 100 100" id="ring"></svg>
+        <div class="hub-readout"><div class="big" id="spm">0</div><div class="lbl">SIGNALS / MIN</div></div>
+      </div>
+      <svg class="spark" id="spark" viewBox="0 0 300 70" preserveAspectRatio="none"></svg>
+      <div class="spark-lbl"><span>30 MIN AGO</span><span>SIGNAL FLOW · BOTH FARMS</span><span>NOW</span></div>
+    </section></div><div id="chad-flywheel" style="display:none;padding:20px;background:rgba(18,16,12,.6);border:1px solid rgba(255,200,120,.12);border-radius:4px;margin-top:12px;font-size:12px;line-height:1.6;color:var(--text)">
+      <h2 style="font-family:var(--display);font-weight:700;color:var(--gold);margin-bottom:16px;font-size:14px;letter-spacing:.1em">CHAD FARM WORKFLOW</h2>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div style="border-left:3px solid var(--gold);padding-left:12px">
+          <div style="color:var(--gold);font-weight:700;margin-bottom:8px">INGEST</div>
+          <div style="font-size:11px;color:var(--mute);line-height:1.6">
+            • Real-time prices<br>
+            • Macro regime (VIX, funding)<br>
+            • News & watchdog alerts
+          </div>
+        </div>
+
+        <div style="border-left:3px solid var(--gold);padding-left:12px">
+          <div style="color:var(--gold);font-weight:700;margin-bottom:8px">SCREEN</div>
+          <div style="font-size:11px;color:var(--mute);line-height:1.6">
+            • 8 bots scan coins<br>
+            • Generate signals<br>
+            • Filter by macro regime
+          </div>
+        </div>
+
+        <div style="border-left:3px solid var(--gold);padding-left:12px">
+          <div style="color:var(--gold);font-weight:700;margin-bottom:8px">GATE & EXECUTE</div>
+          <div style="font-size:11px;color:var(--mute);line-height:1.6">
+            • AI scores (Groq)<br>
+            • Watchdog checks<br>
+            • Open positions
+          </div>
+        </div>
+
+        <div style="border-left:3px solid var(--gold);padding-left:12px">
+          <div style="color:var(--gold);font-weight:700;margin-bottom:8px">LEARN & PROMOTE</div>
+          <div style="font-size:11px;color:var(--mute);line-height:1.6">
+            • Record outcomes<br>
+            • Measure vs gates<br>
+            • Promote to live
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,200,120,.12);font-size:10px;color:var(--mute)">
+        <strong>PHASE GATES:</strong> Oct 14 Panic Harvester → Oct 21 Momentum Cascade → Oct 28 Alpha Reversion → Nov 1 Portfolio Scale
+      </div>
+    </div>
+
+    <section class="panel fleet-panel">
+      <h2>BOT FLEET</h2>
+      <div class="farm"><div class="farm-h"><b style="color:var(--cyan)">P3RP</b><span class="sub" id="p3-h"></span></div><div class="cells" id="p3-cells"></div></div>
+      <div class="farm"><div class="farm-h"><b style="color:var(--gold)">CHAD</b><span class="sub" id="ch-h"></span></div><div class="chad-cards" id="ch-cards"></div></div>
+      <div class="mini">
+        <div class="stat"><div class="k">AI BIAS</div><div class="v" id="bias">...</div></div>
+        <div class="stat"><div class="k">FEAR/GREED</div><div class="v" id="fg">...</div></div>
+        <div class="stat"><div class="k">REGIME</div><div class="v" id="regime" style="font-size:13px">...</div></div>
+      </div>
+    </section>
+  </main>
+
+        <div class="panel">
+      
+
+      <style>
+        #daily-calendar {
+          background: var(--panel);
+          border: 1px solid var(--line);
+          border-radius: 4px;
+          padding: 16px;
+          backdrop-filter: blur(6px);
+          box-shadow: inset 0 1px 0 rgba(255,210,120,.06), 0 20px 60px -30px rgba(0,0,0,.8);
+          animation: rise .9s cubic-bezier(.16,1,.3,1) both;
+          position: relative;
+        }
+        #daily-calendar::before, #daily-calendar::after {
+          content: "";
+          position: absolute;
+          width: 14px;
+          height: 14px;
+          border-color: var(--gold);
+          border-style: solid;
+          opacity: 0.7;
+        }
+        #daily-calendar::before {
+          top: -1px;
+          left: -1px;
+          border-width: 2px 0 0 2px;
+        }
+        #daily-calendar::after {
+          bottom: -1px;
+          right: -1px;
+          border-width: 0 2px 2px 0;
+        }
+        .cal-day {
+          aspect-ratio: 1;
+          padding: 6px;
+          border: 1px solid rgba(255,255,255,.08);
+          border-radius: 3px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          font-size: 9px;
+          cursor: pointer;
+          transition: all 0.3s;
+          background: rgba(255,255,255,.02);
+          position: relative;
+          overflow: hidden;
+        }
+        .cal-day:hover {
+          border-color: var(--gold);
+          box-shadow: inset 0 0 8px rgba(255,178,58,.2);
+        }
+        .cal-day.positive {
+          background: linear-gradient(135deg, rgba(61,255,168,.15), rgba(61,255,168,.05));
+          border-color: rgba(61,255,168,.3);
+        }
+        .cal-day.positive:hover {
+          background: linear-gradient(135deg, rgba(61,255,168,.25), rgba(61,255,168,.12));
+          border-color: #3dffa8;
+          box-shadow: 0 0 12px rgba(61,255,168,.3);
+        }
+        .cal-day.negative {
+          background: linear-gradient(135deg, rgba(255,77,109,.15), rgba(255,77,109,.05));
+          border-color: rgba(255,77,109,.3);
+        }
+        .cal-day.negative:hover {
+          background: linear-gradient(135deg, rgba(255,77,109,.25), rgba(255,77,109,.12));
+          border-color: #ff4d6d;
+          box-shadow: 0 0 12px rgba(255,77,109,.3);
+        }
+        .cal-day.empty {
+          background: rgba(255,255,255,.01);
+          opacity: 0.4;
+        }
+        .cal-day-date {
+          font-family: var(--display);
+          font-weight: 700;
+          font-size: 11px;
+          line-height: 1;
+          margin-bottom: 2px;
+        }
+        .cal-day-pnl {
+          font-weight: 600;
+          font-size: 8px;
+          line-height: 1.2;
+        }
+        .cal-day.positive .cal-day-pnl {
+          color: #3dffa8;
+        }
+        .cal-day.negative .cal-day-pnl {
+          color: #ff4d6d;
+        }
+        .cal-day-meta {
+          font-size: 7px;
+          color: var(--mute);
+          margin-top: 1px;
+        }
+        .cal-day-tooltip {
+          position: absolute;
+          bottom: -45px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: rgba(14,16,24,.95);
+          border: 1px solid var(--gold);
+          border-radius: 3px;
+          padding: 6px 8px;
+          font-size: 9px;
+          white-space: nowrap;
+          z-index: 100;
+          pointer-events: none;
+          opacity: 0;
+          transition: opacity 0.2s;
+          box-shadow: 0 4px 12px rgba(0,0,0,.8);
+        }
+        .cal-day:hover .cal-day-tooltip {
+          opacity: 1;
+        }
+      </style>
+
+      <script>
+        async function loadDailyCalendar() {
+          try {
+            const res = await fetch('http://165.232.160.218/p3rp-api/api/ground-truth');
+            const data = await res.json();
+
+            // Combine P3rP and Chad daily data
+            const combined = {};
+            (data.p3rp_daily || []).forEach(day => {
+              combined[day.date] = (combined[day.date] || {
+                date: day.date,
+                pnl: 0,
+                trades: 0,
+                wins: 0
+              });
+              combined[day.date].pnl += day.pnl;
+              combined[day.date].trades += day.trades;
+              combined[day.date].wins += day.wins;
+            });
+            (data.chad_daily || []).forEach(day => {
+              combined[day.date] = (combined[day.date] || {
+                date: day.date,
+                pnl: 0,
+                trades: 0,
+                wins: 0
+              });
+              combined[day.date].pnl += day.pnl;
+              combined[day.date].trades += day.trades;
+              combined[day.date].wins += (day.wins || 0);
+            });
+
+            const sortedDays = Object.values(combined).sort((a, b) => new Date(b.date) - new Date(a.date));
+            renderCalendar(sortedDays.slice(0, 30));
+          } catch (e) {
+            console.error('Calendar load failed:', e);
+          }
+        }
+
+        function renderCalendar(days) {
+          const grid = document.getElementById('calendar-grid');
+          const monthDiv = document.getElementById('cal-month');
+
+          if (days.length === 0) {
+            grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--mute); padding: 20px;">No data available</div>';
+            return;
+          }
+
+          // Set month/year display from first day
+          const firstDate = new Date(days[0].date);
+          monthDiv.textContent = firstDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }).toUpperCase();
+
+          // Group days by week
+          const weeks = {};
+          days.forEach(day => {
+            const d = new Date(day.date + 'T00:00:00Z');
+            const weekStart = new Date(d);
+            weekStart.setUTCDate(d.getUTCDate() - d.getUTCDay());
+            const weekKey = weekStart.toISOString().split('T')[0];
+            if (!weeks[weekKey]) weeks[weekKey] = {};
+            weeks[weekKey][d.getUTCDay()] = day;
+          });
+
+          // Render calendar cells (keeping header row)
+          let headerFound = false;
+          const cells = Array.from(grid.children);
+          grid.innerHTML = '';
+
+          // Re-add header
+          const headers = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+          headers.forEach(h => {
+            const el = document.createElement('div');
+            el.style.cssText = 'text-align:center;font-size:10px;color:var(--mute);font-weight:600;padding:4px;letter-spacing:.1em';
+            el.textContent = h;
+            grid.appendChild(el);
+          });
+
+          // Add day cells
+          const sortedWeeks = Object.keys(weeks).sort().reverse();
+          sortedWeeks.forEach(weekKey => {
+            const week = weeks[weekKey];
+            for (let dow = 0; dow < 7; dow++) {
+              if (!week[dow]) {
+                const empty = document.createElement('div');
+                empty.className = 'cal-day empty';
+                grid.appendChild(empty);
+              } else {
+                const day = week[dow];
+                const cell = document.createElement('div');
+                const isPositive = day.pnl > 0;
+                cell.className = 'cal-day ' + (isPositive ? 'positive' : day.pnl < 0 ? 'negative' : 'empty');
+                const dateObj = new Date(day.date + 'T00:00:00Z');
+                const dateNum = dateObj.getUTCDate();
+                const wr = day.trades > 0 ? Math.round((day.wins / day.trades) * 100) : 0;
+
+                cell.innerHTML = `
+                  <div class="cal-day-date">${dateNum}</div>
+                  <div class="cal-day-pnl">${day.pnl >= 0 ? '+' : ''}$${Math.abs(day.pnl).toFixed(0)}</div>
+                  <div class="cal-day-meta">${day.trades}T ${wr}%</div>
+                  <div class="cal-day-tooltip">${day.date}<br/>${isPositive ? '+' : ''}$${day.pnl.toFixed(2)}<br/>${day.trades} trades, ${wr}% WR</div>
+                `;
+                grid.appendChild(cell);
+              }
+            }
+          });
+        }
+
+        // Initialize on load
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', loadDailyCalendar);
+        } else {
+          loadDailyCalendar();
+        }
+      </script>
+    </div>
+          <div class="panel">
+      <div id="calendar-tabs-container" style="animation-delay:.25s">
+        <!-- Tab buttons -->
+        <div id="calendar-tab-buttons" style="display:flex;gap:0;margin-bottom:0;border-bottom:2px solid rgba(255,178,58,.2);background:rgba(255,255,255,.01)">
+          <button id="tab-pnl" class="cal-tab-btn active" style="flex:1;padding:12px;text-align:center;border:none;background:transparent;color:var(--gold);font-family:var(--display);font-weight:700;font-size:11px;letter-spacing:.15em;cursor:pointer;border-bottom:2px solid var(--gold);transition:all .3s" onclick="switchCalendarTab('pnl')">
+            DAILY PnL
+          </button>
+          <button id="tab-spend" class="cal-tab-btn" style="flex:1;padding:12px;text-align:center;border:none;background:transparent;color:var(--mute);font-family:var(--display);font-weight:700;font-size:11px;letter-spacing:.15em;cursor:pointer;border-bottom:2px solid transparent;transition:all .3s" onclick="switchCalendarTab('spend')">
+            API SPEND
+          </button>
+          <button id="tab-flywheel" class="cal-tab-btn" style="flex:1;padding:12px;text-align:center;border:none;background:transparent;color:var(--mute);font-family:var(--display);font-weight:700;font-size:11px;letter-spacing:.15em;cursor:pointer;border-bottom:2px solid transparent;transition:all .3s" onclick="switchCalendarTab('flywheel')">
+            FLYWHEEL
+          </button>
+        </div>
+
+        <!-- Tab 1: Daily PnL -->
+        <div id="tab-content-pnl" class="calendar-tab-content" style="display:block;background:var(--panel);border:1px solid var(--line);border-top:none;border-radius:0 0 4px 4px;padding:16px">
+          <div id="calendar-controls" style="display:flex;gap:10px;margin-bottom:12px;font-size:11px">
+            <button id="cal-prev" style="padding:6px 12px;border:1px solid rgba(255,178,58,.28);background:rgba(255,178,58,.08);color:var(--text);cursor:pointer;border-radius:3px;font-family:var(--mono)">← Prev</button>
+            <div id="cal-month" style="flex:1;text-align:center;color:var(--mute);padding:6px">Oct 2026</div>
+            <button id="cal-next" style="padding:6px 12px;border:1px solid rgba(255,178,58,.28);background:rgba(255,178,58,.08);color:var(--text);cursor:pointer;border-radius:3px;font-family:var(--mono)">Next →</button>
+          </div>
+
+          <div id="calendar-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:12px">
+            <!-- Days of week headers -->
+            <div style="text-align:center;font-size:10px;color:var(--mute);font-weight:600;padding:4px;letter-spacing:.1em">SUN</div>
+            <div style="text-align:center;font-size:10px;color:var(--mute);font-weight:600;padding:4px;letter-spacing:.1em">MON</div>
+            <div style="text-align:center;font-size:10px;color:var(--mute);font-weight:600;padding:4px;letter-spacing:.1em">TUE</div>
+            <div style="text-align:center;font-size:10px;color:var(--mute);font-weight:600;padding:4px;letter-spacing:.1em">WED</div>
+            <div style="text-align:center;font-size:10px;color:var(--mute);font-weight:600;padding:4px;letter-spacing:.1em">THU</div>
+            <div style="text-align:center;font-size:10px;color:var(--mute);font-weight:600;padding:4px;letter-spacing:.1em">FRI</div>
+            <div style="text-align:center;font-size:10px;color:var(--mute);font-weight:600;padding:4px;letter-spacing:.1em">SAT</div>
+          </div>
+
+          <div style="font-size:10px;color:var(--mute);display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.06)">
+            <div><span style="display:inline-block;width:12px;height:12px;background:#3dffa8;margin-right:4px;border-radius:2px"></span>Positive</div>
+            <div><span style="display:inline-block;width:12px;height:12px;background:#ff4d6d;margin-right:4px;border-radius:2px"></span>Negative</div>
+            <div><span style="display:inline-block;width:12px;height:12px;background:rgba(255,255,255,.08);margin-right:4px;border-radius:2px"></span>No Data</div>
+          </div>
+        </div>
+
+        <!-- Tab 3: Flywheel -->
+        <div id="tab-content-flywheel" class="calendar-tab-content" style="display:none;background:var(--panel);border:1px solid var(--line);border-top:none;border-radius:0 0 4px 4px;padding:16px">
+          <div id="fw-root" style="font-size:11px;color:var(--mute)">Loading flywheel...</div>
+        </div>
+
+        <!-- Tab 2: Daily API Spend -->
+        <div id="tab-content-spend" class="calendar-tab-content" style="display:none;background:var(--panel);border:1px solid var(--line);border-top:none;border-radius:0 0 4px 4px;padding:16px">
+          <div id="spend-controls" style="display:flex;gap:10px;margin-bottom:12px;font-size:11px">
+            <button id="spend-prev" style="padding:6px 12px;border:1px solid rgba(255,178,58,.28);background:rgba(255,178,58,.08);color:var(--text);cursor:pointer;border-radius:3px;font-family:var(--mono)">← Prev</button>
+            <div id="spend-month" style="flex:1;text-align:center;color:var(--mute);padding:6px">Oct 2026</div>
+            <button id="spend-next" style="padding:6px 12px;border:1px solid rgba(255,178,58,.28);background:rgba(255,178,58,.08);color:var(--text);cursor:pointer;border-radius:3px;font-family:var(--mono)">Next →</button>
+          </div>
+
+          <div id="spend-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:12px">
+            <!-- Days of week headers -->
+            <div style="text-align:center;font-size:10px;color:var(--mute);font-weight:600;padding:4px;letter-spacing:.1em">SUN</div>
+            <div style="text-align:center;font-size:10px;color:var(--mute);font-weight:600;padding:4px;letter-spacing:.1em">MON</div>
+            <div style="text-align:center;font-size:10px;color:var(--mute);font-weight:600;padding:4px;letter-spacing:.1em">TUE</div>
+            <div style="text-align:center;font-size:10px;color:var(--mute);font-weight:600;padding:4px;letter-spacing:.1em">WED</div>
+            <div style="text-align:center;font-size:10px;color:var(--mute);font-weight:600;padding:4px;letter-spacing:.1em">THU</div>
+            <div style="text-align:center;font-size:10px;color:var(--mute);font-weight:600;padding:4px;letter-spacing:.1em">FRI</div>
+            <div style="text-align:center;font-size:10px;color:var(--mute);font-weight:600;padding:4px;letter-spacing:.1em">SAT</div>
+          </div>
+
+          <div style="text-align:center;color:var(--mute);padding:40px 20px;font-size:11px">
+            <div style="margin-bottom:8px">⏳ API spend tracking initializing...</div>
+            <div style="font-size:10px;color:var(--gold)">Wraith: wire up cost data to GET /api/daily-api-spend</div>
+          </div>
+        </div>
+      </div>
+
+      <style>
+        #calendar-tabs-container {
+          background: var(--panel);
+          border: 1px solid var(--line);
+          border-radius: 4px;
+          backdrop-filter: blur(6px);
+          box-shadow: inset 0 1px 0 rgba(255,210,120,.06), 0 20px 60px -30px rgba(0,0,0,.8);
+          animation: rise .9s cubic-bezier(.16,1,.3,1) both;
+          position: relative;
+        }
+        #calendar-tabs-container::before, #calendar-tabs-container::after {
+          content: "";
+          position: absolute;
+          width: 14px;
+          height: 14px;
+          border-color: var(--gold);
+          border-style: solid;
+          opacity: 0.7;
+          z-index: 10;
+        }
+        #calendar-tabs-container::before {
+          top: -1px;
+          left: -1px;
+          border-width: 2px 0 0 2px;
+        }
+        #calendar-tabs-container::after {
+          bottom: -1px;
+          right: -1px;
+          border-width: 0 2px 2px 0;
+        }
+        .cal-tab-btn:hover {
+          opacity: 0.8;
+        }
+        .cal-tab-btn.active {
+          border-bottom-color: var(--gold);
+          color: var(--gold);
+        }
+        .cal-tab-btn:not(.active) {
+          border-bottom-color: transparent;
+          color: var(--mute);
+        }
+        .calendar-tab-content {
+          display: none;
+        }
+        .calendar-tab-content.active {
+          display: block;
+        }
+        .cal-day {
+          aspect-ratio: 1;
+          padding: 6px;
+          border: 1px solid rgba(255,255,255,.08);
+          border-radius: 3px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          font-size: 9px;
+          cursor: pointer;
+          transition: all 0.3s;
+          background: rgba(255,255,255,.02);
+          position: relative;
+          overflow: hidden;
+        }
+        .cal-day:hover {
+          border-color: var(--gold);
+          box-shadow: inset 0 0 8px rgba(255,178,58,.2);
+        }
+        .cal-day.positive {
+          background: linear-gradient(135deg, rgba(61,255,168,.15), rgba(61,255,168,.05));
+          border-color: rgba(61,255,168,.3);
+        }
+        .cal-day.positive:hover {
+          background: linear-gradient(135deg, rgba(61,255,168,.25), rgba(61,255,168,.12));
+          border-color: #3dffa8;
+          box-shadow: 0 0 12px rgba(61,255,168,.3);
+        }
+        .cal-day.negative {
+          background: linear-gradient(135deg, rgba(255,77,109,.15), rgba(255,77,109,.05));
+          border-color: rgba(255,77,109,.3);
+        }
+        .cal-day.negative:hover {
+          background: linear-gradient(135deg, rgba(255,77,109,.25), rgba(255,77,109,.12));
+          border-color: #ff4d6d;
+          box-shadow: 0 0 12px rgba(255,77,109,.3);
+        }
+        .cal-day.empty {
+          background: rgba(255,255,255,.01);
+          opacity: 0.4;
+        }
+        .cal-day-date {
+          font-family: var(--display);
+          font-weight: 700;
+          font-size: 11px;
+          line-height: 1;
+          margin-bottom: 2px;
+        }
+        .cal-day-pnl {
+          font-weight: 600;
+          font-size: 8px;
+          line-height: 1.2;
+        }
+        .cal-day.positive .cal-day-pnl {
+          color: #3dffa8;
+        }
+        .cal-day.negative .cal-day-pnl {
+          color: #ff4d6d;
+        }
+        .cal-day-meta {
+          font-size: 7px;
+          color: var(--mute);
+          margin-top: 1px;
+        }
+        .cal-day-tooltip {
+          position: absolute;
+          bottom: -45px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: rgba(14,16,24,.95);
+          border: 1px solid var(--gold);
+          border-radius: 3px;
+          padding: 6px 8px;
+          font-size: 9px;
+          white-space: nowrap;
+          z-index: 100;
+          pointer-events: none;
+          opacity: 0;
+          transition: opacity 0.2s;
+          box-shadow: 0 4px 12px rgba(0,0,0,.8);
+        }
+        .cal-day:hover .cal-day-tooltip {
+          opacity: 1;
+        }
+      
+        .cal-day.warn {
+          background: linear-gradient(135deg, rgba(255,178,58,.15), rgba(255,178,58,.05));
+          border-color: rgba(255,178,58,.3);
+        }
+        .cal-day.warn:hover {
+          background: linear-gradient(135deg, rgba(255,178,58,.25), rgba(255,178,58,.12));
+          border-color: var(--gold);
+          box-shadow: 0 0 12px rgba(255,178,58,.3);
+        }
+        .cal-day.warn .cal-day-pnl {
+          color: var(--gold);
+        }
+    </style>
+
+      <script>
+        function switchCalendarTab(tab) {
+          document.querySelectorAll('.calendar-tab-content').forEach(el => { el.style.display = 'none'; });
+          document.querySelectorAll('.cal-tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+            btn.style.borderBottomColor = 'transparent';
+            btn.style.color = 'var(--mute)';
+          });
+          document.getElementById('tab-content-' + tab).style.display = 'block';
+          const b = document.getElementById('tab-' + tab);
+          b.classList.add('active');
+          b.style.borderBottomColor = 'var(--gold)';
+          b.style.color = 'var(--gold)';
+          if (tab === 'flywheel') loadFlywheel();
+        }
+
+        async function loadDailyPnLCalendar() {
+          try {
+            const res = await fetch('http://165.232.160.218/p3rp-api/api/ground-truth');
+            const data = await res.json();
+
+            const combined = {};
+            (data.p3rp_daily || []).forEach(day => {
+              combined[day.date] = (combined[day.date] || {
+                date: day.date,
+                pnl: 0,
+                trades: 0,
+                wins: 0
+              });
+              combined[day.date].pnl += day.pnl;
+              combined[day.date].trades += day.trades;
+              combined[day.date].wins += day.wins;
+            });
+            (data.chad_daily || []).forEach(day => {
+              combined[day.date] = (combined[day.date] || {
+                date: day.date,
+                pnl: 0,
+                trades: 0,
+                wins: 0
+              });
+              combined[day.date].pnl += day.pnl;
+              combined[day.date].trades += day.trades;
+              combined[day.date].wins += (day.wins || 0);
+            });
+
+            const sortedDays = Object.values(combined).sort((a, b) => new Date(b.date) - new Date(a.date));
+            renderPnLCalendar(sortedDays.slice(0, 30));
+          } catch (e) {
+            console.error('PnL calendar load failed:', e);
+          }
+        }
+
+        function renderPnLCalendar(days) {
+          const grid = document.getElementById('calendar-grid');
+          const monthDiv = document.getElementById('cal-month');
+
+          if (days.length === 0) {
+            grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--mute); padding: 20px;">No data available</div>';
+            return;
+          }
+
+          const firstDate = new Date(days[0].date);
+          monthDiv.textContent = firstDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }).toUpperCase();
+
+          const weeks = {};
+          days.forEach(day => {
+            const d = new Date(day.date + 'T00:00:00Z');
+            const weekStart = new Date(d);
+            weekStart.setUTCDate(d.getUTCDate() - d.getUTCDay());
+            const weekKey = weekStart.toISOString().split('T')[0];
+            if (!weeks[weekKey]) weeks[weekKey] = {};
+            weeks[weekKey][d.getUTCDay()] = day;
+          });
+
+          const cells = Array.from(grid.children);
+          grid.innerHTML = '';
+
+          const headers = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+          headers.forEach(h => {
+            const el = document.createElement('div');
+            el.style.cssText = 'text-align:center;font-size:10px;color:var(--mute);font-weight:600;padding:4px;letter-spacing:.1em';
+            el.textContent = h;
+            grid.appendChild(el);
+          });
+
+          const sortedWeeks = Object.keys(weeks).sort().reverse();
+          sortedWeeks.forEach(weekKey => {
+            const week = weeks[weekKey];
+            for (let dow = 0; dow < 7; dow++) {
+              if (!week[dow]) {
+                const empty = document.createElement('div');
+                empty.className = 'cal-day empty';
+                grid.appendChild(empty);
+              } else {
+                const day = week[dow];
+                const cell = document.createElement('div');
+                const isPositive = day.pnl > 0;
+                cell.className = 'cal-day ' + (isPositive ? 'positive' : day.pnl < 0 ? 'negative' : 'empty');
+                const dateObj = new Date(day.date + 'T00:00:00Z');
+                const dateNum = dateObj.getUTCDate();
+                const wr = day.trades > 0 ? Math.round((day.wins / day.trades) * 100) : 0;
+
+                cell.innerHTML = `
+                  <div class="cal-day-date">${dateNum}</div>
+                  <div class="cal-day-pnl">${day.pnl >= 0 ? '+' : ''}$${Math.abs(day.pnl).toFixed(0)}</div>
+                  <div class="cal-day-meta">${day.trades}T ${wr}%</div>
+                  <div class="cal-day-tooltip">${day.date}<br/>${isPositive ? '+' : ''}$${day.pnl.toFixed(2)}<br/>${day.trades} trades, ${wr}% WR</div>
+                `;
+                grid.appendChild(cell);
+              }
+            }
+          });
+        }
+
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', loadDailyPnLCalendar);
+        } else {
+          loadDailyPnLCalendar();
+        }
+      </script>
+    </div>
+    <div class="bottom">
+    <section class="panel" style="animation-delay:.24s"><h2>TASK BOARD</h2>
+      <div class="lanes">
+        <div class="lane open"><h3>OPEN</h3><div id="l-open"></div></div>
+        <div class="lane prog"><h3>IN PROGRESS</h3><div id="l-prog"></div></div>
+        <div class="lane done"><h3>DONE</h3><div id="l-done"></div></div>
+      </div>
+    </section>
+    <section class="panel" style="animation-delay:.3s"><h2>LIVE FEED</h2><div class="feed" id="feed"></div></section>
+    <section class="panel" style="animation-delay:.36s"><h2>AI FUEL</h2><div id="fuel"></div>
+      <div class="note">OpenRouter credit that powers Wraith, Ballena and Mudz. Bots and the signal scorer run on separate, near-free compute.</div></section>
+  </div>
+</div>
+<div class="stale" id="stale">DATA IS STALE: the collector on Mudz has not reported recently. Is the Mudz Mac awake?</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const fmt$ = n => (n < 0 ? "-$" : "$") + Math.abs(n).toLocaleString(undefined, {maximumFractionDigits: 0});
+const ago = ms => { const s = Math.max(0, (Date.now() - ms) / 1000); return s < 60 ? Math.round(s) + "s" : s < 3600 ? Math.round(s / 60) + "m" : Math.round(s / 3600) + "h"; };
+const until = ms => { if (!ms) return "?"; let s = (ms - Date.now()) / 1000; if (s < 0) return "now"; const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60); return h > 47 ? Math.round(h / 24) + "d" : h ? `${h}h ${m}m` : `${m}m`; };
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+let S = null, rate = 0;
+
+/* clock */
+setInterval(() => {
+  const d = new Date();
+  $("clock").textContent = d.toLocaleTimeString("en-US", {timeZone: "America/Los_Angeles", hour12: false}) + " PT  ·  " + d.toISOString().slice(11, 19) + " UTC";
+  if (S) { const age = Date.now() - Date.parse(S.generated); $("fresh").textContent = ago(Date.parse(S.generated)) + " AGO";
+    $("d-fresh").className = "dot pulse" + (age > 300000 ? " bad" : age > 150000 ? " warn" : ""); $("stale").style.display = age > 300000 ? "block" : "none"; renderJobs(); }
+}, 1000);
+
+/* flywheel ring */
+const STAGES = [
+  ["INGEST", "markets + macro + news"], ["SIGNALS", "bots scanning"], ["AI GATE", "scored by Groq"], ["TRADES", "paper positions"],
+  ["OUTCOMES", "scorecard"], ["RESEARCH", "Ballena"], ["PROPOSALS", "strategy ideas"], ["SHADOW", "7-day trials"]];
+function buildRing() {
+  const svg = $("ring"); let h = `<defs><linearGradient id="rg" x1="0" x2="1"><stop offset="0" stop-color="#ffb23a"/><stop offset="1" stop-color="#3fe0ff"/></linearGradient></defs>
+  <circle cx="50" cy="50" r="41" fill="none" stroke="url(#rg)" stroke-width=".35" opacity=".8"/>
+  <circle cx="50" cy="50" r="44.5" fill="none" stroke="#3fe0ff" stroke-width=".15" stroke-dasharray=".6 1.6" opacity=".6">
+    <animateTransform attributeName="transform" type="rotate" from="0 50 50" to="-360 50 50" dur="90s" repeatCount="indefinite"/></circle>
+  <circle cx="50" cy="50" r="38" fill="none" stroke="#ffb23a" stroke-width=".12" stroke-dasharray="3 2" opacity=".5">
+    <animateTransform attributeName="transform" type="rotate" from="0 50 50" to="360 50 50" dur="60s" repeatCount="indefinite"/></circle>`;
+  svg.innerHTML = h;
+  const wheel = $("wheel");
+  STAGES.forEach(([t, d], i) => {
+    const a = -Math.PI / 2 + i * 2 * Math.PI / STAGES.length, x = 50 + 41 * Math.cos(a), y = 50 + 41 * Math.sin(a);
+    const el = document.createElement("div"); el.className = "stage"; el.id = "st" + i;
+    el.style.left = x + "%"; el.style.top = y + "%"; el.innerHTML = `<div class="t">${t}</div><div class="v">...</div><div class="d">${d}</div>`;
+    wheel.appendChild(el);
+  });
+}
+function setStage(i, v, d, hot) { const el = $("st" + i); if (!el) return; el.querySelector(".v").textContent = v; if (d) el.querySelector(".d").textContent = d; el.classList.toggle("hot", !!hot); }
+
+/* particles orbiting the ring, speed and density follow signals/min */
+const cv = $("particles"), cx = cv.getContext("2d"); let parts = [];
+function resize() { const r = cv.getBoundingClientRect(), dpr = devicePixelRatio || 1; cv.width = r.width * dpr; cv.height = r.height * dpr; cx.setTransform(dpr, 0, 0, dpr, 0, 0); }
+addEventListener("resize", resize);
+function tick() {
+  const w = cv.clientWidth, R = w * .41, c = w / 2, want = Math.min(260, 40 + rate * .8);
+  while (parts.length < want) parts.push({a: Math.random() * 6.283, r: R + (Math.random() - .5) * w * .05, s: .6 + Math.random() * .9, gold: Math.random() < .55, z: Math.random()});
+  if (parts.length > want) parts.length = Math.floor(want);
+  cx.clearRect(0, 0, w, w);
+  const speed = .0018 + Math.min(rate, 400) / 400 * .012;
+  for (const p of parts) {
+    p.a += speed * p.s; const x = c + p.r * Math.cos(p.a), y = c + p.r * Math.sin(p.a);
+    const tail = 14 * p.s * (1 + speed * 120);
+    const g = cx.createLinearGradient(x, y, c + p.r * Math.cos(p.a - tail / p.r), c + p.r * Math.sin(p.a - tail / p.r));
+    const col = p.gold ? "255,190,80" : "80,230,255"; g.addColorStop(0, `rgba(${col},${.5 + p.z * .5})`); g.addColorStop(1, `rgba(${col},0)`);
+    cx.strokeStyle = g; cx.lineWidth = 1 + p.z * 1.6; cx.beginPath(); cx.arc(c, c, p.r, p.a - tail / p.r, p.a); cx.stroke();
+  }
+  requestAnimationFrame(tick);
+}
+
+/* agent tree */
+function renderTree() {
+  const A = S.agents || [], live = id => (A.find(a => a.id === id) || {}).online;
+  const nodes = [
+    {id: "root", x: 210, y: 34, w: 170, nm: "CARLITOS", rl: "command"},
+    {id: "claude", x: 70, y: 128, w: 128, nm: "CLAUDE CODE", rl: "builder · on demand", on: true},
+    {id: "wraith", x: 210, y: 128, w: 128, nm: "WRAITH", rl: "infra · daily sync", on: live("wraith")},
+    {id: "ballena", x: 350, y: 128, w: 128, nm: "BALLENA", rl: "research · quant", on: live("ballena")},
+    {id: "p3", x: 120, y: 268, w: 150, nm: "P3RP FARM", rl: "", on: true},
+    {id: "ch", x: 300, y: 268, w: 150, nm: "CHAD FARM", rl: "", on: true},
+    {id: "mudz", x: 210, y: 198, w: 128, nm: "MUDZ", rl: "UI · visuals", on: live("mudz")}];
+  const p3 = S.bots.p3rp || {}, ch = S.bots.chad || {}, act = s => (s || []).filter(x => x.active).length;
+  nodes[4].rl = `${act(p3.services)}/${(p3.services || []).length} bots live`; nodes[5].rl = `${act(ch.services)}/${(ch.services || []).length} bots live`;
+  const N = Object.fromEntries(nodes.map(n => [n.id, n]));
+  const edges = [["root", "claude"], ["root", "wraith"], ["root", "ballena"], ["wraith", "mudz", 1], ["ballena", "mudz", 1], ["wraith", "p3"], ["wraith", "ch"], ["claude", "p3", 1], ["ballena", "ch", 1]];
+  let h = "";
+  for (const [a, b, cy] of edges) {
+    const A1 = N[a], B1 = N[b], my = (A1.y + B1.y) / 2, d = `M${A1.x},${A1.y + 18} C${A1.x},${my} ${B1.x},${my} ${B1.x},${B1.y - 18}`;
+    const on = A1.on !== false && B1.on !== false;
+    h += `<path class="edge" d="${d}"/>` + (on ? `<path class="flow${cy ? " cy" : ""}${a === "root" || cy ? " slow" : ""}" d="${d}"/>` : "");
+  }
+  for (const n of nodes) {
+    const off = n.on === false;
+    h += `<g class="node${n.id === "root" ? " root" : ""}${off ? " off" : ""}" transform="translate(${n.x - n.w / 2},${n.y - 18})">
+      <rect width="${n.w}" height="36" rx="3"/>
+      <circle cx="11" cy="12" r="3.5" fill="${off ? "var(--bad)" : "var(--ok)"}"><animate attributeName="opacity" values="1;.3;1" dur="${1.4 + Math.random()}s" repeatCount="indefinite"/></circle>
+      <text class="nm" x="20" y="16">${n.nm}</text><text class="rl" x="11" y="29">${esc(n.rl)}${off ? " · OFFLINE" : ""}</text></g>`;
+  }
+  $("tree").innerHTML = h;
+}
+function renderJobs() {
+  const rows = [];
+  for (const a of S.agents || []) for (const j of a.jobs || []) rows.push({who: a.id, ...j});
+  rows.sort((x, y) => (x.next || 9e15) - (y.next || 9e15));
+  $("jobs").innerHTML = rows.slice(0, 7).map(r => `<div class="job"><span class="who">${r.who.toUpperCase()}</span><span>${esc(r.name)}${r.running ? ' <span class="pos">· running</span>' : ""}</span><span class="when">${r.running ? "NOW" : "in " + until(r.next)}</span></div>`).join("")
+    || '<div class="sub">No scheduled agent jobs found.</div>';
+}
+
+/* render everything */
+function render() {
+  const b = S.bots || {}, p3 = b.p3rp || {}, ch = b.chad || {}, br = b.brain || {};
+  const p3s = p3.signals || {}, chs = ch.signals || {};
+  const perMin = (p3s.per_min || []).map((v, i) => v + ((chs.per_min || [])[i] || 0));
+  rate = perMin.slice(-5).reduce((a, c) => a + c, 0) / 5 || 0;
+  $("spm").textContent = Math.round(rate);
+  // header
+  const wd = b.watchdog || {}; $("wd").textContent = wd.halt ? "HALT" : "CLEAR"; $("d-wd").className = "dot" + (wd.halt ? " bad pulse" : "");
+  $("mkt").textContent = `${br.regime || "?"} · ${br.bias || "?"}`;
+  const sv = b.server || {}; $("srv").textContent = sv.ram_total ? `LOAD ${sv.load} · RAM ${Math.round(100 * sv.ram_used / sv.ram_total)}%` : "?";
+  // stages
+  const hourSig = (p3s.last_hour || 0) + (chs.last_hour || 0), acted = (p3s.acted_hour || 0) + (chs.acted_hour || 0);
+  const allBots = {...(p3.bots || {}), ...(ch.bots || {})}, open = Object.values(allBots).reduce((a, x) => a + (x.open || 0), 0);
+  const trades = Object.values(allBots).reduce((a, x) => a + (x.trades || 0), 0);
+  const best = Object.entries(p3.bots || {}).sort((a, c) => c[1].pnl - a[1].pnl)[0];
+  const tasks = S.tasks || [], openT = tasks.filter(t => t.status === "OPEN").length, doneT = tasks.filter(t => t.status === "DONE").length;
+  const pr = br.proposals || {}, sh = br.shadow_rows || {};
+  const liveBots = [...(p3.services || []), ...(ch.services || [])].filter(s => s.active).length;
+  setStage(0, liveBots + " BOTS", "scanning 24/7", true);
+  setStage(1, hourSig.toLocaleString(), "signals last hour", rate > 50);
+  setStage(2, acted + " PASSED", hourSig ? `${(100 * acted / hourSig).toFixed(2)}% of signals` : "", acted > 0);
+  setStage(3, open + " OPEN", `${trades.toLocaleString()} trades on ledger`, open > 0);
+  setStage(4, best ? fmt$(best[1].pnl) : "...", best ? "best: " + best[0].replace(/_/g, " ") : "", best && best[1].pnl > 0);
+  setStage(5, `${doneT} DONE`, `${openT} open tasks`, false);
+  setStage(6, `${pr.approved || 0} APPROVED`, `${pr.deployed || 0} deployed`, false);
+  setStage(7, `${sh.running || 0} RUNNING`, b.infra && b.infra["p3rp-shadow"] !== "active" ? "service stopped ⚠" : "trial bots", false);
+  // sparkline
+  const mx = Math.max(10, ...perMin), pts = perMin.map((v, i) => `${(i / 29) * 300},${66 - (v / mx) * 58}`).join(" ");
+  $("spark").innerHTML = `<defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffb23a" stop-opacity=".55"/><stop offset="1" stop-color="#ffb23a" stop-opacity="0"/></linearGradient></defs>
+    <polygon points="0,70 ${pts} 300,70" fill="url(#sg)"/><polyline points="${pts}" fill="none" stroke="#ffd27a" stroke-width="1.6" vector-effect="non-scaling-stroke"/>`;
+  // fleet
+  const norm = s => s.replace(/-/g, "_");
+  $("p3-cells").innerHTML = (p3.services || []).map(s => { const st = (p3.bots || {})[norm(s.name)] || (p3.bots || {})[s.name];
+    const cls = !s.active ? "dead" : st && st.pnl > 0 ? "win" : st && st.pnl < 0 ? "loss" : "";
+    return `<div class="cell ${cls}" style="animation-delay:${Math.random() * 3}s" title="${esc(s.name)}${st ? ` · ${st.trades} trades · ${fmt$(st.pnl)}` : ""}"></div>`; }).join("");
+  const p3net = Object.values(p3.bots || {}).reduce((a, x) => a + x.pnl, 0);
+  $("p3-h").innerHTML = `${(p3.services || []).filter(s => s.active).length} live · net <span class="${p3net >= 0 ? "pos" : "neg"}">${fmt$(p3net)}</span>`;
+  const chadId = n => n === "panic-harvester-15m" ? "CC15m_SOL_001" : n;
+  $("ch-cards").innerHTML = (ch.services || []).map(s => { const st = (ch.bots || {})[chadId(s.name)] || {trades: 0, pnl: 0, open: 0, wins: 0};
+    const bal = 10000 + st.pnl; return `<div class="cc"><div class="n">${s.active ? "●" : "○"} ${esc(s.name.replace(/-/g, " "))}</div>
+      <div class="b ${st.pnl > 0 ? "pos" : st.pnl < 0 ? "neg" : ""}">${fmt$(bal)}</div><div class="s">${st.trades} trades · ${st.open} open</div></div>`; }).join("");
+  $("ch-h").textContent = `${(ch.services || []).filter(s => s.active).length} live · clean sheet Oct 7`;
+  $("bias").textContent = br.bias || "?"; $("fg").textContent = br.fear_greed ?? "?"; $("regime").textContent = br.regime || "?";
+  // tasks
+  const lane = st => tasks.filter(t => t.status === st).map(t => `<div class="task"><div class="r">${esc(t.from || "?")} → ${esc(t.to || "?")}</div>${esc(t.title)}</div>`).join("") || '<div class="sub">none</div>';
+  $("l-open").innerHTML = lane("OPEN") + lane("BLOCKED").replace('<div class="sub">none</div>', ""); $("l-prog").innerHTML = lane("IN PROGRESS"); $("l-done").innerHTML = lane("DONE");
+  // feed
+  const ev = [...(ch.trades || []).map(t => ({ts: t.ts, k: "trade", txt: `CHAD ${t.bot} ${t.side} ${t.sym}${t.pnl != null ? " " + fmt$(t.pnl) : ""}`, tag: t.exit || "OPEN"})),
+    ...(p3.trades || []).map(t => ({ts: t.ts, k: "trade", txt: `P3RP ${t.bot} ${t.side} ${t.sym}${t.pnl != null ? " " + fmt$(t.pnl) : ""}`, tag: t.exit || "OPEN"})),
+    ...[...(p3s.feed || []), ...(chs.feed || [])].filter(f => f.dir && f.dir !== "NONE" && !/^waiting/.test(f.skip || "")).map(f => ({ts: f.ts, k: f.acted ? "acted" : "skip", txt: `${f.bot} ${f.dir} ${f.sym}`, tag: f.acted ? "TAKEN" : (f.skip || "skipped").replace(/_/g, " ").slice(0, 22)}))]
+    .sort((a, c) => c.ts.localeCompare(a.ts)).slice(0, 18);
+  $("feed").innerHTML = ev.map((e, i) => `<div class="ev ${e.k}" style="animation-delay:${i * 30}ms"><span class="ts">${e.ts.slice(11, 19)}</span><span>${esc(e.txt)}</span><span class="tag">${esc(e.tag)}</span></div>`).join("");
+  // fuel
+  $("fuel").innerHTML = (S.credits || []).map(c => { const pct = Math.max(2, Math.min(100, c.left / 1000 * 100)), days = c.week ? c.left / (c.week / 7) : 99;
+    return `<div class="fuel"><div class="row"><span>${esc(c.name)}</span><b class="${c.left < 150 ? "neg" : ""}">$${c.left.toFixed(0)} left</b></div>
+      <div class="bar ${c.left < 150 ? "low" : ""}"><i style="width:${pct}%"></i></div>
+      <div class="row sub" style="margin-top:4px"><span>today $${c.today.toFixed(0)} · week $${c.week.toFixed(0)}</span><span>~${days < 99 ? days.toFixed(0) : "99+"} days</span></div></div>`; }).join("")
+    || '<div class="sub">Credit check pending.</div>';
+  renderTree(); renderJobs();
+}
+
+async function load() {
+  try { const r = await fetch("status.json?t=" + Date.now(), {cache: "no-store"}); if (r.ok) { S = await r.json(); render(); } } catch (e) {}
+}
+buildRing(); resize(); tick(); load(); setInterval(load, 15000);
+</script>
+<script></script><script>
+function switchFarm(f){
+  var p3 = document.getElementById('p3-tab');
+  var ch = document.getElementById('ch-tab');
+  var p3wheel = document.getElementById('p3rp-flywheel');
+  var chwheel = document.getElementById('chad-flywheel');
+
+  if(f === 'p3rp'){
+    p3.style.borderBottomColor = 'var(--gold)';
+    p3.style.color = 'var(--gold)';
+    ch.style.borderBottomColor = 'transparent';
+    ch.style.color = 'var(--mute)';
+    if(p3wheel) p3wheel.style.display = 'block';
+    if(chwheel) chwheel.style.display = 'none';
+  } else {
+    ch.style.borderBottomColor = 'var(--gold)';
+    ch.style.color = 'var(--gold)';
+    p3.style.borderBottomColor = 'transparent';
+    p3.style.color = 'var(--mute)';
+    if(p3wheel) p3wheel.style.display = 'none';
+    if(chwheel) chwheel.style.display = 'block';
+  }
+}
+
+        async function loadDailyApiSpendCalendar() {
+          try {
+            const res = await fetch('http://165.232.160.218/p3rp-api/api/daily-api-spend');
+            const data = await res.json();
+
+            const days = data.days || [];
+            const live = data.live || {};
+
+            // Sort by date descending (most recent first)
+            const sorted = days.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 30);
+
+            renderApiSpendCalendar(sorted, live);
+          } catch (e) {
+            console.error('API spend calendar load failed:', e);
+            document.getElementById('spend-grid').innerHTML =
+              '<div style="grid-column: 1/-1; text-align: center; color: var(--mute); padding: 20px;">Failed to load cost data</div>';
+          }
+        }
+
+        function renderApiSpendCalendar(days, live) {
+          const grid = document.getElementById('spend-grid');
+          const monthDiv = document.getElementById('spend-month');
+
+          // Update header with live stats
+          const _oldBanner = document.getElementById('spend-banner'); if (_oldBanner) _oldBanner.remove();
+          const banner = document.createElement('div');
+          banner.id = 'spend-banner';
+          banner.style.cssText = 'grid-column: 1/-1; padding: 12px; background: rgba(255,178,58,.08); border: 1px solid rgba(255,178,58,.2); border-radius: 3px; margin-bottom: 12px; font-size: 11px; color: var(--mute)';
+          const _recent = days.slice(0, 7).map(d => d.spend_usd || 0).filter(x => x > 0);
+          const _avg = _recent.length ? _recent.reduce((a, b) => a + b, 0) / _recent.length : (live.today_usd || 0.5);
+          const daysLeft = (live.remaining_usd && _avg > 0) ? Math.floor(live.remaining_usd / _avg) : 0;
+          banner.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap">
+              <div><span style="color: var(--gold); font-weight: 700">Remaining:</span> $${live.remaining_usd?.toFixed(2) || '0.00'}</div>
+              <div><span style="color: var(--gold); font-weight: 700">Days left:</span> ~${daysLeft} days</div>
+              <div><span style="color: var(--gold); font-weight: 700">Today:</span> $${live.today_usd?.toFixed(2) || '0.00'}</div>
+              <div><span style="color: var(--gold); font-weight: 700">Total used:</span> $${live.total_used_usd?.toFixed(2) || '0.00'}</div>
+            </div>
+          `;
+          grid.parentElement.insertBefore(banner, grid);
+
+          if (days.length === 0) {
+            grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--mute); padding: 20px;">No cost data available</div>';
+            return;
+          }
+
+          const firstDate = new Date(days[0].date);
+          monthDiv.textContent = firstDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }).toUpperCase();
+
+          // Group by week
+          const weeks = {};
+          days.forEach(day => {
+            const d = new Date(day.date + 'T00:00:00Z');
+            const weekStart = new Date(d);
+            weekStart.setUTCDate(d.getUTCDate() - d.getUTCDay());
+            const weekKey = weekStart.toISOString().split('T')[0];
+            if (!weeks[weekKey]) weeks[weekKey] = {};
+            weeks[weekKey][d.getUTCDay()] = day;
+          });
+
+          // Clear and rebuild
+          grid.innerHTML = '';
+          const headers = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+          headers.forEach(h => {
+            const el = document.createElement('div');
+            el.style.cssText = 'text-align:center;font-size:10px;color:var(--mute);font-weight:600;padding:4px;letter-spacing:.1em';
+            el.textContent = h;
+            grid.appendChild(el);
+          });
+
+          const sortedWeeks = Object.keys(weeks).sort().reverse();
+          sortedWeeks.forEach(weekKey => {
+            const week = weeks[weekKey];
+            for (let dow = 0; dow < 7; dow++) {
+              if (!week[dow]) {
+                const empty = document.createElement('div');
+                empty.className = 'cal-day empty';
+                grid.appendChild(empty);
+              } else {
+                const day = week[dow];
+                const spend = day.spend_usd || 0;
+
+                // Color thresholds: green <$0.50, amber $0.50-$2, red >$2
+                let color_class = 'positive'; // green by default
+                if (spend >= 2) {
+                  color_class = 'negative'; // red
+                } else if (spend >= 0.5) {
+                  color_class = 'warn'; // amber
+                }
+
+                const cell = document.createElement('div');
+                cell.className = 'cal-day ' + color_class;
+                const dateObj = new Date(day.date + 'T00:00:00Z');
+                const dateNum = dateObj.getUTCDate();
+
+                cell.innerHTML = `
+                  <div class="cal-day-date">${dateNum}</div>
+                  <div class="cal-day-pnl">$${spend.toFixed(2)}</div>
+                  <div class="cal-day-meta">${(spend > 0.01 ? '💸' : '✓')}</div>
+                  <div class="cal-day-tooltip">${day.date}<br/>Spend: $${spend.toFixed(2)}<br/>Remaining: $${day.remaining_usd?.toFixed(2) || '?'}</div>
+                `;
+                grid.appendChild(cell);
+              }
+            }
+          });
+        }
+
+        // Load on tab click and on initial page load
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', () => {
+            loadDailyApiSpendCalendar();
+          });
+        } else {
+          loadDailyApiSpendCalendar();
+        }
+
+        // Also load when tab is clicked
+        document.getElementById('tab-spend').addEventListener('click', loadDailyApiSpendCalendar);
+
+        // ===== FLYWHEEL TAB (Ballena 2026-10-09) =====
+        const FW_COL = {OK:'var(--ok)', WARN:'var(--gold)', BROKEN:'var(--bad)', MISSED:'var(--bad)', UNKNOWN:'var(--mute)'};
+        function fwAgo(iso) {
+          if (!iso) return 'never';
+          const m = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+          if (m < 1) return 'just now'; if (m < 60) return m + 'm ago';
+          if (m < 2880) return Math.round(m / 60) + 'h ago'; return Math.round(m / 1440) + 'd ago';
+        }
+        function fwSched(e) {
+          const [m,h,d,mo,w] = e.split(' ');
+          if (m.startsWith('*/')) return 'every ' + m.slice(2) + ' min';
+          if (h === '*') return 'hourly :' + m.padStart(2,'0');
+          if (h.startsWith('*/')) return 'every ' + h.slice(2) + 'h';
+          const t = h.padStart(2,'0') + ':' + m.padStart(2,'0') + ' UTC';
+          return (w !== '*' ? 'Mon ' : 'daily ') + t;
+        }
+        function fwSec(iso) { if (!iso) return 9999; return Math.round((Date.now() - new Date(iso).getTime()) / 1000); }
+        function fwLive(iso) {
+          const s = fwSec(iso), ok = s < 45, c = ok ? 'var(--ok)' : 'var(--bad)';
+          return `<span style="color:${c};font-weight:700"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${c};margin-right:5px;${ok ? 'animation:fwpulse 1.5s infinite' : ''}"></span>${ok ? 'LIVE' : 'STALE'} &middot; ${s < 90 ? s + 's' : Math.round(s / 60) + 'm'} ago</span>`;
+        }
+        function fwEsc(x) { return String(x == null ? '' : x).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+        let FW_SYS = 'p3rp', FW_DATA = null;
+        function fwSetSys(s) { FW_SYS = s; fwRender(); }
+        async function loadFlywheel() {
+          const root = document.getElementById('fw-root');
+          try {
+            const r = await fetch('flywheel.json?t=' + Date.now(), {cache:'no-store'});
+            FW_DATA = await r.json(); fwRender();
+          } catch (e) { root.innerHTML = '<div style="color:var(--bad)">Flywheel data unavailable: ' + fwEsc(e.message) + '</div>'; }
+        }
+        function fwJobRows(js) {
+          let h = '';
+          js.forEach(j => {
+            const c = FW_COL[j.status] || 'var(--mute)';
+            h += `<div style="display:flex;gap:10px;align-items:flex-start;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+              <div style="width:62px"><span style="display:inline-block;padding:2px 8px;border:1px solid ${c};color:${c};border-radius:10px;font-size:10px;font-weight:700">${j.status}</span></div>
+              <div style="flex:1;min-width:0"><div style="color:var(--text);font-weight:700">${fwEsc(j.label)} <span style="color:var(--mute);font-weight:400">&middot; ${fwSched(j.schedule)}</span></div>
+                <div style="color:var(--mute);font-size:10px">${fwEsc(j.what)}</div>
+                ${j.status !== 'OK' ? `<div style="color:${c};font-size:10px;margin-top:2px">${fwEsc(j.note || j.last_line)}${j.note && j.last_line ? ' &mdash; ' + fwEsc(j.last_line) : ''}</div>` : ''}</div>
+              <div style="width:90px;text-align:right;color:var(--mute);font-size:10px">last run<br><span style="color:var(--text)">${fwAgo(j.last_start || j.log_updated)}</span></div></div>`;
+          });
+          return h;
+        }
+        function fwStageBlock(jobs) {
+          const stages = {}; jobs.forEach(j => (stages[j.stage] = stages[j.stage] || []).push(j));
+          const nm = {'1 SENSE':'1 &middot; SENSE (data in)','2 SCORE':'2 &middot; SCORE (AI rates signals)','3 LEARN':'3 &middot; LEARN (why we bleed)','4 MUTATE':'4 &middot; MUTATE (propose changes)','5 JUDGE':'5 &middot; JUDGE (promote / kill)','6 HEAL':'6 &middot; HEAL (monitor + auto-fix)','7 INFRA':'7 &middot; INFRA'};
+          let h = '';
+          Object.keys(stages).sort().forEach(st => {
+            const js = stages[st], sb = js.filter(x => x.status === 'BROKEN' || x.status === 'MISSED').length;
+            h += `<div style="margin-bottom:12px"><div style="font-size:10px;letter-spacing:.14em;color:${sb ? 'var(--bad)' : 'var(--gold)'};margin-bottom:4px;border-bottom:1px solid var(--line);padding-bottom:3px">${nm[st] || st}</div>${fwJobRows(js)}</div>`;
+          });
+          return h;
+        }
+        function fwBox(title, big, sub, col) {
+          return `<div style="flex:1;min-width:120px;border:1px solid var(--line);border-radius:4px;padding:10px;background:rgba(255,255,255,.02)">
+            <div style="font-size:9px;letter-spacing:.14em;color:var(--mute)">${title}</div>
+            <div style="font-size:18px;font-weight:800;color:${col||'var(--text)'};margin:3px 0">${big}</div>
+            <div style="font-size:10px;color:var(--mute)">${sub}</div></div>`;
+        }
+        function fwMoney(x) { if (x == null) return '-'; return (x < 0 ? '-$' : '+$') + Math.abs(Math.round(x)).toLocaleString(); }
+        function fwHead(title, status, right) {
+          const c = status === 'OK' ? 'var(--ok)' : status === 'WARN' ? 'var(--gold)' : 'var(--bad)';
+          const t = status === 'OK' ? 'ALL RUNNING' : status === 'WARN' ? 'RUNNING - WARNINGS' : 'ISSUES';
+          return `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+            <div style="font-size:16px;font-weight:800;color:${c};font-family:var(--display);letter-spacing:.1em">${title}: ${t}</div><div style="color:var(--mute)">${right}</div></div>`;
+        }
+        function fwSysHealth(sysd) { return sysd.BROKEN + sysd.MISSED ? 'BROKEN' : (sysd.WARN + sysd.UNKNOWN ? 'WARN' : 'OK'); }
+        function fwRender() {
+          const d = FW_DATA, root = document.getElementById('fw-root'); if (!d) return;
+          const hp3 = fwSysHealth(d.systems.p3rp), hch = d.chad.health;
+          const dot = s => `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${s === 'OK' ? 'var(--ok)' : s === 'WARN' ? 'var(--gold)' : 'var(--bad)'};margin-right:6px"></span>`;
+          const sw = (id, label, st, sub) => `<button onclick="fwSetSys('${id}')" style="flex:1;padding:10px;cursor:pointer;font-family:var(--display);font-weight:800;font-size:12px;letter-spacing:.14em;border-radius:4px;border:1px solid ${FW_SYS === id ? 'var(--gold)' : 'var(--line)'};background:${FW_SYS === id ? 'rgba(255,178,58,.12)' : 'transparent'};color:${FW_SYS === id ? 'var(--gold)' : 'var(--mute)'}">${dot(st)}${label}<div style="font-size:9px;font-weight:400;letter-spacing:.05em;margin-top:3px">${sub}</div></button>`;
+          const p3t = d.p3rp_totals || {};
+          let h = `<div style="display:flex;gap:8px;margin-bottom:14px">
+            ${sw('p3rp', 'P3RP', hp3, (p3t.bots_active || 0) + ' bots &middot; ' + fwMoney(p3t.pnl))}
+            ${sw('chad', 'CHAD', hch, d.chad.totals.running + '/' + d.chad.totals.bots + ' bots &middot; ' + fwMoney(d.chad.totals.pnl))}
+            ${sw('shared', 'SHARED', fwSysHealth(d.systems.shared), d.systems.shared.total + ' infra jobs')}</div>`;
+          if (FW_SYS === 'p3rp') h += fwP3rp(d); else if (FW_SYS === 'chad') h += fwChad(d); else {
+            h += fwHead('SHARED INFRA', fwSysHealth(d.systems.shared), 'used by both P3RP and Chad &middot; ' + fwLive(d.generated));
+            h += fwStageBlock(d.jobs.filter(j => j.system === 'shared'));
+          }
+          root.innerHTML = h;
+        }
+        function fwP3rp(d) {
+          const dm = d.daemons, pp = d.pipeline, pl = pp.pulse || {}, sh = pp.shadow || {}, pr = pp.proposals || {}, sc = pp.scores_24h || {}, p3t = d.p3rp_totals || {};
+          const sy = d.systems.p3rp;
+          let h = fwHead('P3RP', fwSysHealth(sy), sy.OK + '/' + sy.total + ' jobs OK &middot; ' + fwLive(d.generated));
+          h += `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+            ${fwBox('ALL-TIME PnL', fwMoney(p3t.pnl), (p3t.trades||0) + ' trades &middot; WR ' + (p3t.wr ?? '-') + '% &middot; ' + (p3t.open||0) + ' open', (p3t.pnl||0) >= 0 ? 'var(--ok)' : 'var(--bad)')}
+            ${fwBox('MARKET PULSE', fwEsc(pl.regime||'-'), 'bias ' + fwEsc(pl.bias||'-') + ' &middot; conf ' + (pl.confidence ?? '-') + '% &middot; ' + fwAgo(pl.created_at), (pl.confidence||0) >= 50 ? 'var(--ok)' : 'var(--gold)')}
+            ${fwBox('PROPOSALS', (pr.deployed||0) + ' deployed', (pr.rejected||0) + ' rejected')}
+            ${fwBox('SHADOW BOTS', (sh.running||0) + ' running', (sh.terminated||0) + ' killed &middot; need n&ge;100 to pass')}
+            ${fwBox('PROMOTED LIVE', pp.promoted_live || 0, 'winners deployed by loop (cap 4)', (pp.promoted_live||0) ? 'var(--ok)' : 'var(--text)')}
+            ${fwBox('AI SCORING 24h', (sc.total||0), (sc.ai_unavailable||0) + ' unavailable', (sc.ai_unavailable||0) > (sc.total||1) * 0.3 ? 'var(--bad)' : 'var(--ok)')}
+            ${fwBox('BOTS', dm.p3rp_farm_active || 0, (dm.p3rp_farm_failed||0) + ' failed', (dm.p3rp_farm_failed||0) ? 'var(--bad)' : 'var(--ok)')}</div>`;
+          const lm = d.llm_today || {}, tk = lm.tokens || {}, lf = lm.fail || {};
+          h += `<div style="margin-bottom:14px"><div style="font-size:10px;letter-spacing:.14em;color:var(--mute);margin-bottom:6px">FREE AI POOLS (today, Groq 200k tokens/model/day)</div>`;
+          Object.keys(Object.assign({}, tk, lf)).forEach(m => {
+            const t = tk[m] || 0, pct = m.startsWith('gemini') ? 0 : Math.min(100, t / 2000);
+            const col = pct > 85 ? 'var(--bad)' : pct > 60 ? 'var(--gold)' : 'var(--ok)';
+            h += `<div style="display:flex;align-items:center;gap:8px;margin:3px 0"><div style="width:190px;color:var(--text)">${fwEsc(m)}</div>
+              <div style="flex:1;height:8px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${col}"></div></div>
+              <div style="width:200px;text-align:right;color:var(--mute)">${t.toLocaleString()} tok${lf[m] ? ' &middot; <span style="color:var(--gold)">' + lf[m] + ' rate-limited</span>' : ''}</div></div>`;
+          });
+          h += '</div>' + fwStageBlock(d.jobs.filter(j => j.system === 'p3rp'));
+          if ((d.actions || []).length) {
+            h += `<div style="font-size:10px;letter-spacing:.14em;color:var(--mute);margin:6px 0">LOOP ACTIONS (what the flywheel did by itself)</div>`;
+            d.actions.slice(0, 8).forEach(a => {
+              const det = Object.entries(a).filter(([k]) => !['ts','action'].includes(k)).map(([k,v]) => k + '=' + (Array.isArray(v) ? v.length + ' items' : String(v).slice(0, 40))).join(' ');
+              h += `<div style="padding:3px 0;color:var(--mute)"><span style="color:var(--cyan)">${fwEsc(a.action)}</span> <span style="font-size:10px">${fwEsc(det)}</span> <span style="float:right;font-size:10px">${fwAgo(a.ts)}</span></div>`;
+            });
+          }
+          return h;
+        }
+        function fwChad(d) {
+          const c = d.chad, t = c.totals, cd = c.candidates || {};
+          let h = fwHead('CHAD', c.health, t.running + '/' + t.bots + ' bots running &middot; ' + fwLive(d.generated));
+          h += `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+            ${fwBox('ALL-TIME PnL', fwMoney(t.pnl), t.closed + ' closed &middot; ' + t.open + ' open (new farm since Oct 8)', t.pnl >= 0 ? 'var(--ok)' : 'var(--bad)')}
+            ${fwBox('BOTS RUNNING', t.running + '/' + t.bots, 'paper, 10x leverage', t.running === t.bots ? 'var(--ok)' : 'var(--gold)')}
+            ${fwBox('SCREENER PIPELINE', (cd.SHADOW||0) + ' shadow', (cd.CANDIDATE||0) + ' candidate &middot; ' + (cd.INSUFFICIENT||0) + ' insufficient &middot; ' + (cd.FAILED_SCREEN||0) + ' failed')}</div>`;
+          h += `<div style="font-size:10px;letter-spacing:.14em;color:var(--gold);margin-bottom:4px;border-bottom:1px solid var(--line);padding-bottom:3px">FLYWHEEL STAGES (what Chad has vs P3RP)</div>`;
+          c.stages.forEach(x => {
+            const col = x.status === 'OK' ? 'var(--ok)' : x.status === 'NOT BUILT' ? 'var(--mute)' : x.status === 'UNKNOWN' ? 'var(--mute)' : 'var(--bad)';
+            h += `<div style="display:flex;gap:10px;align-items:flex-start;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+              <div style="width:92px"><span style="display:inline-block;padding:2px 8px;border:1px ${x.status === 'NOT BUILT' ? 'dashed' : 'solid'} ${col};color:${col};border-radius:10px;font-size:10px;font-weight:700">${x.status}</span></div>
+              <div style="flex:1"><div style="color:var(--text);font-weight:700">${fwEsc(x.n)} &middot; ${fwEsc(x.name)}</div><div style="color:${x.status === 'OK' ? 'var(--mute)' : col};font-size:10px">${fwEsc(x.note)}</div></div></div>`;
+          });
+          h += `<div style="font-size:10px;letter-spacing:.14em;color:var(--gold);margin:14px 0 4px;border-bottom:1px solid var(--line);padding-bottom:3px">BOTS</div>
+            <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px"><tr style="color:var(--mute);font-size:9px;letter-spacing:.1em;text-align:left"><th style="padding:4px">BOT</th><th>STATUS</th><th>TF</th><th style="text-align:right">PnL</th><th style="text-align:right">CLOSED</th><th style="text-align:right">OPEN</th><th style="text-align:right">WR</th><th style="text-align:right">BALANCE</th><th style="text-align:right">LAST SIGNAL</th></tr>`;
+          c.bots.forEach(b => {
+            const col = b.status === 'OK' ? 'var(--ok)' : 'var(--bad)';
+            h += `<tr style="border-top:1px solid rgba(255,255,255,.05)"><td style="padding:5px 4px;color:var(--text);font-weight:700">${fwEsc(b.name)}<div style="font-weight:400;color:var(--mute);font-size:9px">${fwEsc((b.coins||'').split(',').slice(0,4).join(','))}${(b.coins||'').split(',').length > 4 ? '...' : ''}</div></td>
+              <td style="color:${col}">${b.status}${b.note ? '<div style="font-size:9px">' + fwEsc(b.note) + '</div>' : ''}</td><td style="color:var(--mute)">${fwEsc(b.tf)}</td>
+              <td style="text-align:right;color:${b.pnl < 0 ? 'var(--bad)' : b.pnl > 0 ? 'var(--ok)' : 'var(--mute)'}">${fwMoney(b.pnl)}</td><td style="text-align:right">${b.closed}</td><td style="text-align:right">${b.open}</td>
+              <td style="text-align:right">${b.wr == null ? '-' : b.wr + '%'}</td><td style="text-align:right;color:var(--mute)">${b.balance == null ? '-' : '$' + Math.round(b.balance).toLocaleString()}</td><td style="text-align:right;color:var(--mute)">${fwAgo(b.last_signal)}</td></tr>`;
+          });
+          h += '</table></div>';
+          const cj = d.jobs.filter(j => j.system === 'chad');
+          if (cj.length) h += `<div style="font-size:10px;letter-spacing:.14em;color:var(--gold);margin:14px 0 4px;border-bottom:1px solid var(--line);padding-bottom:3px">CHAD CRON JOBS</div>` + fwJobRows(cj);
+          return h;
+        }
+        setInterval(() => { const t = document.getElementById('tab-content-flywheel'); if (t && t.style.display === 'block' && FW_DATA) fwRender(); }, 1000);
+        setInterval(() => { const t = document.getElementById('tab-content-flywheel'); if (t && t.style.display === 'block') loadFlywheel(); }, 10000);
+    </script>
+</body>
+</html>
